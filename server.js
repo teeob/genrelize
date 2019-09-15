@@ -2,28 +2,33 @@ require('dotenv').config()
 
 const express = require('express');
 const app = express();
-
-const client_id = process.env.CLIENT_ID;
-const response_type = 'token';
-const redirect_uri = 'http://localhost:' + process.env.PORT;
-const scope = 'user-top-read';   
-const show_dialog = true;
+const bodyParser = require('body-parser');
+const querystring = require('querystring');
+const fs = require('fs');
 
 app.use(express.static('public'));
 
-app.get('/', function (req, res){
-    res.send('Hello Tare');
+const queryStringParams = {
+    client_id : process.env.CLIENT_ID,
+    redirect_uri : encodeURI('http://localhost:' + process.env.PORT),
+    scope : 'user-top-read',
+    response_type : 'token',
+    show_dialog : true
+}
+
+app.get('/authorize', function(req, res) {
+    res.send('https://accounts.spotify.com/authorize?' + querystring.stringify(queryStringParams));
 })
 
-app.get('/login', function(req, res) {
+app.use(bodyParser.json());
+app.post('/save', function(req, res) {
+    let dir = './public/my.json';
+    let toSave = JSON.stringify(req.body);
 
-    const url = 'https://accounts.spotify.com/authorize?client_id=' + client_id
-    +'&redirect_uri=' + encodeURIComponent(redirect_uri)
-    +'&scope=' + encodeURIComponent(scope)
-    +'&response_type=' + response_type
-    +'&show_dialog=' + show_dialog;
-    
-    res.send(url);
+    res.send(fs.writeFile(dir, toSave, e => {
+        if (e) console.log(e);
+        //console.log(`file saved to ${dir}`);
+    }));
 })
 
 var listener = app.listen(process.env.PORT, function () {

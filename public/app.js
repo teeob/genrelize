@@ -1,69 +1,72 @@
+const accessToken = localStorage.getItem('access_token');
+const accessTokenExpiresIn = localStorage.getItem('expires_in');
+const tokenType = localStorage.getItem('token_type');
 
-//document.getElementById('submit').addEventListener('click', function() {
-    getUsersTopArtists();
+if(!accessToken || parseInt(localStorage.getItem('expires_in')) < Date.now()) {
+    window.location = '/';
+}
 
-    //console.log(localStorage.getItem('accessToken'));
+(function getUsersTopArtists () {
+    fetch('https://api.spotify.com/v1/me/top/artists?limit=20&offset=0&time_range=long_term', { //move to variable for options?
+        method : 'GET',
+        headers : {
+            Authorization: `${tokenType} ${accessToken}`
+        }
+    })
+    .then(res => res.json())
+    .then(function (topArtists) {
+        let parent = [];
+        let children = sort(topArtists);
 
-    // query //https://api.spotify.com/v1/me/top/artists?limit=20&offset=20 //long_term(several years), medium_term(~6 mnths), short_term(~4wks)
+        parent.push({"name": "your top genres", "children" : children});
 
-    /*
-     var genreObject = {
-         genre : genre,
-         artist : artiste,
-         number : number
-     }
-     */
+        if (parent && parent.length)
+            save(parent);
 
+        console.log(parent); //delete later
+    })
+    .catch(e => console.log(e))
 
-    function getUsersTopArtists () {
-        fetch('https://api.spotify.com/v1/me/top/artists?limit=50&offset=0&time_range=long_term', { 
-            method : 'GET',
-            headers : {
-                Authorization: `Bearer ${localStorage.getItem('accessToken')}`
+    //document.getElementById("widget").src = "https://open.spotify.com/embed/album/5GWoXPsTQylMuaZ84PC563";
+
+    drawD3Chart();
+})();
+
+function sort(topArtists){
+    let result = [];
+
+    topArtists.items.forEach(artist => {
+        artist.genres.forEach(genre => {
+            if(result.some( 
+                e => {
+                    if(e.genre === genre) {
+                        e.artists.push(artist.name);
+                        e.value = e.artists.length; //or +=1
+                    }
+                    return (e.genre === genre)
+                }
+            )){}//add to log file if genre already exists
+            else{
+                result.push({'genre': genre, 'artists': [artist.name], 'value': 1});
             }
         })
-        .then(resp => resp.json())
-        //.then(data => console.log(data))
-        .then(function (data) {
-            //debugger;
-            //console.log(data);
-            var parentarr = [];
+    });
+    
+    return result.sort((a,b) => b.value - a.value);
+}
 
-            var arr = [];
-            let i = 1;
-            data.items.forEach(function(e) {
-                //;
-                e.genres.forEach( function(gen) {
-                    //debugger
-                    if(arr.some(
-                        //el => el.genre === gen)
-                        function(el) {
-                            if(el.genre === gen){
-                                //debugger
-                                el.artiste.push(e.name)
-                                el.value += 1;
-                                //debugger
-                            }
-                            return (el.genre === gen);
-                        }
-                        )){
-                        //append the number for object
-                        console.log('already exists');
-                    }
-                    else{
-                        //debugger
-                        arr.push({'id':i++, 'genre': gen, 'artiste': [e.name], 'value': 1});
-                        //arr.push(gen);
-                    }
-                    //debugger
-                })
-                //console.log(arr);
-            });
-            parentarr.push({"name": "mousiki", "children" : arr});
-            //JSON.stringify(arr);
-            console.log(parentarr);
-            ///////console.log(JSON.stringify(parentarr));
-        })
-        .catch(err => console.log('error ', err))
-    }
-///});
+function save(parent) {
+    fetch('/save', {
+        method: 'POST', 
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(parent[0]) 
+        /*
+        serialize json body with json.stringify
+        serialize - turn parrent obj to memory so it can be saved
+        */
+    })
+    .catch(e => console.log(e))
+}
+

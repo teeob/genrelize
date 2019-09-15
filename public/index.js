@@ -1,56 +1,32 @@
-document.getElementById('login').addEventListener('click', function() {
-    //console.log('button works');
-
-    // fetch('/login')
-    // .then(resp => resp.json())
-    // .then(function (data) {
-    //     console.log(data);
-    // })
-    // .catch(err => console.log(err + ' error!'))
-
-    fetch('/login')
-    .then(function (resp) { 
-        //console.log(resp); 
-        return resp.text();
-        //return resp.json();
+(function() {
+    document.getElementById('login').addEventListener('click', function() {
+    fetch('/authorize')
+    .then(response => response.clone().json().catch(() => response.text()).then(result => window.location = result))
+    .catch(error => console.log(error + ' ' + 'error authorizing user'))
     })
-    .then(function (data) {
-        //console.log(data);
-        debugger;
-        window.location = data;
-    })
-    .catch(err => console.log(err + ' ' + 'error!'))
-})
 
-// set access token
-localStorage.setItem('accessToken', function () {
-    const hash = window.location.hash;
+    if(window.location.hash) {
+        let hash = parse(window.location.hash);
+        let expiryTime = Date.now() + (1000 * hash['expires_in']);
 
-    if(hash != null && hash != '') {
-        return hash.substring(hash.indexOf('=') + 1, hash.indexOf('&'));
+        localStorage.setItem('access_token', hash['access_token']);
+        localStorage.setItem('expires_in', expiryTime);
+        localStorage.setItem('token_type', hash['token_type']);
+
+        if(hash['access_token'] && parseInt(localStorage.getItem('expires_in')) > Date.now()) {
+            window.location = '/app.html';
+        }
     }
-}())
 
-// const accessToken = function () {
-//       const hash = window.location.hash;
-   
-//       if(hash != null && hash != ''){
-//          return hash.substring(
-//             hash.indexOf("=") + 1, 
-//             hash.indexOf("&")
-//          );
-//       }
-// }
+    function parse(hash){
+        let result = {}
 
-// localStorage.setItem("accessToken", accessToken);
+        hash.slice(1).split("&").reduce(function (accumulator, currentValue){
+            let splitValue = currentValue.split("=");
 
-if(window.location.hash) {
-    window.location = '/app.html';
-}
+            result[splitValue[0]] = splitValue[1];
+        }, hash.length)
 
-// etch('/spotifyRedirectUri')
-//       .then(e => e.json())
-//       .then(data => {
-//         window.location = data.redirectUri;
-//       })
-//       .catch(error => { alert("Failed to prepare for Spotify Authentication")});
+        return result;
+    }
+})();
