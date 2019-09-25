@@ -4,12 +4,12 @@
 
 <link href="/style.css" rel="stylesheet">
 <div id='divElement'>
-    <iframe id="widget" src="https://open.spotify.com/embed/album/1DFixLWuPkv3KT3TnV35m3" width="300" height="850" frameborder="0" allowtransparency="true" allow="encrypted-media"></iframe> <!--align="left"-->
+    <iframe id="widgetId" src="https://open.spotify.com/embed/playlist/6Nao3rMGoXHaFd0QAcTKPc" width="300" height="850" frameborder="0" allowtransparency="true" allow="encrypted-media"></iframe> <!--align="left"-->
     <svg id="svg" width="960" height="960"></svg>
 </div>
 <script> 
     window.setTimeout(
-        () => window.location.href=window.location.href, 
+        () => window.location='/', 
         (parseInt(localStorage.getItem('expires_in')) - Date.now())
     )
 </script>

@@ -20,69 +20,142 @@ function drawD3Chart() {
                
    d3.json('my.json').then(root => {
        
-       svg.style("cursor", "pointer")
-           .on("click", () => zoom(root))
-           .call(responsivefy);
+        svg.style("cursor", "pointer")
+            .on("click", () => zoom(root))
+            .call(responsivefy);
 
-       root = d3.hierarchy(root)
-               .sum(d => d.value)
-               .sort((a,b) => b.value - a.value);
+        root = d3.hierarchy(root)
+                .sum(d => d.value)
+                .sort((a,b) => b.value - a.value);
 
-       let focus = root,
-           nodes = pack(root).descendants(),
-           view;
+        let focus = root,
+            nodes = pack(root).descendants(),
+            view;
 
-       let circle = g.selectAll('circle')
-                   .data(nodes)
-                   .enter().append('circle')
-                   .attr('class', () => 'node')
-                   .style('fill', d => color(d.depth))
-                   .on('click', d => focus !== d && (zoom(d), d3.event.stopPropagation()));
+        let circle = g.selectAll('circle')
+                    .data(nodes)
+                    .enter().append('circle')
+                    .attr('class', () => 'node')
+                    .style('fill', d => color(d.depth))
+                    .on('click', d => focus !== d && (zoom(d), d3.event.stopPropagation()));
 
-       let text = g.selectAll('text')
-                   .data(nodes)
-                   .enter().append('text')
-                   .attr('class', 'label')
-                   .style('fill-opacity', d => d.parent === root ? 1 : 0)
-                   .style('display', d => d.parent === root ? 'inline' : 'none')
-                   .text(d => d.data.genre);
+        let text = g.selectAll('text')
+                    .data(nodes)
+                    .enter().append('text')
+                    .attr('class', 'label')
+                    .style('fill-opacity', d => d.parent === root ? 1 : 0)
+                    .style('display', d => d.parent === root ? 'inline' : 'none')
+                    .text(d => d.data.genre);
 
-       let node = g.selectAll('circle, text');
+        let node = g.selectAll('circle, text');
 
-       zoomTo([root.x, root.y, root.r * 2]);
+        svg
+        .style("background", color(-1))
+        .on("click", function() { zoom(root); });
+
+        zoomTo([root.x, root.y, root.r * 2]);
 
        function zoom(d) {
-           focus = d;
+            focus = d;
 
-           /*
-           * create new playlist or seed of artistes or genre, send
-           */
-           console.log(focus);
-           document.getElementById("widget").src = "https://open.spotify.com/embed/album/5GWoXPsTQylMuaZ84PC563";
+            //create new playlist or seed of artistes or genre, send
+            let newarray = [];
+            //console.log(focus.data.artists)/////
+            if( focus.data.artists !== undefined) {
 
-           let transition = d3.transition()
-                               .duration(d3.event.altKey ? 7500 : 750)
-                               .tween('zoom', d => {
-                                   let i = d3.interpolateZoom(view, [focus.x, focus.y, focus.r * 2]);
-                                   return t => zoomTo(i(t));
-                               })
+                focus.data.artists.slice(0, 5).forEach(element => {
+                    newarray.push(element.id);
+                });
 
-           transition.selectAll('text')
-                       .filter(d => { d.parent === focus})
-                       .style('fill-opacity', d => d.parent === focus ? 1 : 0)
-                       .on('start', d => { if (d.parent === focus) this.style.display = "inline"; })
-                       .on('end', d => { if (d.parent !== focus) this.style.display = "none"; });
-       }
+                getRecommendationsBasedOn(newarray.join());
+            }
+            
+            let transition = d3.transition()
+                                .duration(d3.event.altKey ? 7500 : 750)
+                                .tween('zoom', d => {
+                                    let i = d3.interpolateZoom(view, [focus.x, focus.y, focus.r * 2]);
+                                    return t => zoomTo(i(t));
+                                })
 
-       function zoomTo(v) {
-           let k = diameter / v[2]; view = v;
-           node.attr('transform', d => 'translate(' + (d.x - v[0]) * k + ',' + (d.y - v[1]) * k + ')');
-           circle.attr('r', d => d.r * k);
-       }
+            transition.selectAll('text')
+                        .filter(d => { d.parent === focus})
+                        .style('fill-opacity', d => d.parent === focus ? 1 : 0)
+                        .on('start', d => { if (d.parent === focus) this.style.display = "inline"; })
+                        .on('end', d => { if (d.parent !== focus) this.style.display = "none"; });
+        }
+
+        function zoomTo(v) {
+            let k = diameter / v[2]; view = v;
+            node.attr('transform', d => 'translate(' + (d.x - v[0]) * k + ',' + (d.y - v[1]) * k + ')');
+            circle.attr('r', d => d.r * k);
+        }
+
+        // iframe.contentWindow.location.reload(forceGet)();
+
+        //document.getElementById('widget').contentWindow.location.reload(true);
    })
+
+   //document.getElementById('widget').contentWindow.location.reload(true);
 }
 
-//function 
+function getRecommendationsBasedOn(seedArtists) {
+    //let newarray = [];
+
+    fetch(`https://api.spotify.com/v1/recommendations?limit=50&seed_artists=${seedArtists}`, {
+        method : 'GET',
+        headers : {
+            Authorization: `${tokenType} ${accessToken}`
+        }
+    })
+    .then(res => res.json())
+    .then(function (data, ...newarray) {
+        
+
+        data.tracks.forEach(element => {
+            newarray.push(element.uri);
+        });
+
+        //console.log(newarray.join());
+
+        add(newarray.join(), '6Nao3rMGoXHaFd0QAcTKPc')
+    })
+    .catch(e => console.log(e))
+
+    //console.log(newarray.join());
+
+    //add(newarray.join(), '6Nao3rMGoXHaFd0QAcTKPc')
+}
+
+function add(tracks, toPlaylist_id) {
+    //console.log(tracks);
+
+    fetch(`https://api.spotify.com/v1/playlists/${toPlaylist_id}/tracks?uris=${tracks}`, {
+        method : 'PUT',
+        headers : {
+            Authorization: `${tokenType} ${accessToken}`
+        }
+    })
+    //.then(document.getElementById("widget").src = "https://open.spotify.com/embed/playlist/6Nao3rMGoXHaFd0QAcTKPc")
+    .catch(e => console.log(e))
+    console.log('done');
+    
+    reload();
+}
+function reload() {
+
+    console.log('reload');
+    //document.getElementById('widget').src = document.getElementById('widget').src
+    //window.frames['widgetId'].location.reload();
+    document.getElementById('widgetId').src += '';
+
+    // var iframe = document.getElementById('widgetId');
+    // iframe.src = iframe.src;
+
+    //document.getElementById('widgetId').contentDocument.location.reload(true);
+
+    //iframe.contentWindow.location.reload();
+
+}
 
 /* resposivefy by Brendan Sudol https://brendansudol.com/writing/responsive-d3 */
 function responsivefy(svg) {
@@ -111,6 +184,6 @@ function responsivefy(svg) {
        svg.attr('width', targetWidth);
        svg.attr('height', Math.round(targetWidth / aspect));
 
-       document.getElementById('widget').height = targetWidth;
+       document.getElementById('widgetId').height = targetWidth;
    }
 }

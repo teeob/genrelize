@@ -11,7 +11,7 @@ app.use(express.static('public'));
 const queryStringParams = {
     client_id : process.env.CLIENT_ID,
     redirect_uri : encodeURI('http://localhost:' + process.env.PORT),
-    scope : 'user-top-read',
+    scope : 'user-top-read,playlist-modify-private,playlist-modify-private,playlist-modify-public',
     response_type : 'token',
     show_dialog : true
 }
