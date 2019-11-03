@@ -10,7 +10,7 @@ if(!accessToken || parseInt(localStorage.getItem('expires_in')) < Date.now()) {
 
 (function getUsersTopArtists () {
     fetch('https://api.spotify.com/v1/me/top/artists?limit=50&time_range=short_term', { //move to variable for options?
-    //fetch('https://api.spotify.com/v1/me/top/artists?limit=25', { //there seems to be a ~17% increase in genres by increse from 20 - 25 artistes
+    //fetch('https://api.spotify.com/v1/me/top/artists?limit=25', { //there seems to be a ~17% increase in genres by increase from 20 - 25 artistes
         method : 'GET',
         headers : {
             Authorization: `${tokenType} ${accessToken}`
